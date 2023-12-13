@@ -4,18 +4,6 @@ const bcrypt = require("bcrypt");
 
 // Define the user schema with various fields
 const userSchema = new mongoose.Schema({
-  // First name of the user
-  firstName: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  // Last name of the user
-  lastName: {
-    type: String,
-    required: true,
-    trim: true,
-  },
   // Email address of the user (unique)
   email: {
     type: String,

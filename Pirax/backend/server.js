@@ -25,35 +25,44 @@ const app = express();
 // Create an instance of Apollo Server with the defined schema and resolvers
 const server = new ApolloServer({ typeDefs, resolvers });
 
-// Set up middleware to handle URL-encoded and JSON data
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+// Async function to start the Apollo Server
+const startApolloServer = async () => {
+  // Start the Apollo Server
+  await server.start();
 
-// Serve static assets and handle routes in production
-// This block will only execute if NODE_ENV is explicitly set to "production"
-if (NODE_ENV === "production") {
-  // Serve static files from the 'dist' directory
-  app.use(express.static(path.join(__dirname, "../client/dist")));
+  // Set up middleware to handle URL-encoded and JSON data
+  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
 
-  // Handle all other routes by serving the 'index.html' file
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+  // Serve static assets and handle routes in production
+  // This block will only execute if NODE_ENV is explicitly set to "production"
+  if (NODE_ENV === "production") {
+    // Serve static files from the 'dist' directory
+    app.use(express.static(path.join(__dirname, "../client/dist")));
+
+    // Handle all other routes by serving the 'index.html' file
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+    });
+  } else {
+    // This block will execute when NODE_ENV is not "production"
+    console.log(
+      `Running in ${NODE_ENV} environment. Static assets and routes may not be configured for this environment.`
+    );
+  }
+
+  // Use Apollo Server middleware at the '/graphql' endpoint
+  app.use("/graphql", expressMiddleware(server));
+
+  // Once the database connection is open, start the Express server
+  db.once("open", () => {
+    app.listen(PORT, () => {
+      // Log a message indicating the server is running
+      console.log(`API server running on port ${PORT}!`);
+      console.log(`Use GraphQL at http://localhost:${PORT}/graphql`);
+    });
   });
-} else {
-  // This block will execute when NODE_ENV is not "production"
-  console.log(
-    `Running in ${NODE_ENV} environment. Static assets and routes may not be configured for this environment.`
-  );
-}
+};
 
-// Use Apollo Server middleware at the '/graphql' endpoint
-app.use("/graphql", expressMiddleware(server));
-
-// Once the database connection is open, start the Express server
-db.once("open", () => {
-  app.listen(PORT, () => {
-    // Log a message indicating the server is running
-    console.log(`API server running on port ${PORT}!`);
-    console.log(`Use GraphQL at http://localhost:${PORT}/graphql`);
-  });
-});
+// Call the async function to start the server
+startApolloServer();
